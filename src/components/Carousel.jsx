@@ -1,6 +1,12 @@
 import styled from 'styled-components';
 import { useState, useEffect, useRef } from "react";
 import Content from './Content';
+import { headerHeight } from "./Header";
+
+const CSSvariables = styled.div.attrs(props=>({id:"vars", ref:props.ref}))`
+--movement:0;
+--element:0;
+`;
 
 const Container = styled.div.attrs(props => ({ onTouchStart: props.touchStart, onTouchEnd: props.touchEnd, onTouchMove: props.touchMove }))`
 border-radius:20px;
@@ -47,16 +53,41 @@ const getAspectRatio = (content,type) => {
     });
 }
 
+    const getDimensions = (aspect) => (window.visualViewport.width/(window.visualViewport.height-headerHeight)>aspect?["100%","auto"]:["auto","100%"])
 
 function Carousel() {
-
     const [data, setData] = useState([]);
-    let selectedItem = 1;
+    let prevWidth;
     useEffect(() => getAll().then(res => setData(res)), []);
+    let varsRef = useRef(null);
+    let scalableContent = data.filter((element) => element[1] != "audio");
+    let items;
+    let selectedItem = 1;
     let initialX = 0;
 
-//TODO: implement an array of refs that will reference each element
-    let elements = document.getElementsByName("element");
+    useEffect(() => {
+        
+        items = document.getElementsByName("content");
+        for (let i = 0; i < items.length; i++) {
+            const [width, height] = getDimensions(scalableContent[i][2]);
+            prevWidth = width;
+            items[i].style.setProperty("--width",width);
+            items[i].style.setProperty("--height",height);
+        }
+        window.addEventListener("resize", resizeHandler);
+        return () => window.removeEventListener("resize",resizeHandler)
+    },[data])
+
+    function resizeHandler() {
+        for (let i = 0; i < items.length; i++) {
+            const [width, height] = getDimensions(scalableContent[i][2]);
+            if (width != prevWidth) {
+                items[i].style.setProperty("--width", width);
+                prevWidth = width;
+                items[i].style.setProperty("--height", height);
+            }
+        }
+    }
 
     function touchStartHandler(e) {
         initialX = e.touches[0].clientX;
@@ -67,34 +98,31 @@ function Carousel() {
         let movement = initialX - e.changedTouches[0].clientX;
         if (movement > 200) {
             selectedItem++;
-            for (let element of elements)
-                element.style.setProperty("--element", selectedItem);
+            varsRef.current.style.setProperty("--element", selectedItem);
         }
         else if (movement < -200) {
             selectedItem--;
-            for (let element of elements)
-                element.style.setProperty("--element", selectedItem);
+            varsRef.current.style.setProperty("--element", selectedItem);
         }
-        for (let element of elements)
-            element.style.setProperty("--movement", 0);
+        varsRef.current.setProperty("--movement", 0);
     }
 
     function touchMoveHandler(e) {
 
         let movement = initialX - e.touches[0].clientX;
-            for (let element of elements)
-                element.style.setProperty("--movement", movement/4);
+            varsRef.current.setProperty("--movement", movement/4);
     }
 
     let createElements = [];
     for (let i = 0; i < data.length; i++)
         createElements.push(<Content data={data[i]} key={i + 1} id={i + 1} curElement={selectedItem}></Content>);
     
-    
     return (
-        <Container touchStart={touchStartHandler} touchMove={touchMoveHandler} touchEnd={touchEndHandler} >
-            {createElements}
-        </Container>
+
+            <Container touchStart={touchStartHandler} touchMove={touchMoveHandler} touchEnd={touchEndHandler} >
+                {createElements}
+            </Container>
+
     );
 }
 

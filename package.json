@@ -1,7 +1,7 @@
 {
-  "name": "Carousel",
+  "name": "carousel",
   "version": "1.0.0",
-  "description": "",
+  "description": "Scandiweb test assignment",
   "main": "webpack.config.js",
   "scripts": {
     "start": "webpack serve --hot --open --mode development",

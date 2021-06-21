@@ -30,7 +30,7 @@ pointer-events: all;
 `;
 
 const StyledVideo = styled.video.attrs(props => ({
-    id: "vid", loop: true, preload:"auto", onClick: () => {
+    name: "content", loop: true, preload:"auto", onClick: () => {
         if (props.playing) {
             props.setPlaying((prev) => (!prev));
             videoClick();
