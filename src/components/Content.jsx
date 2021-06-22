@@ -5,9 +5,6 @@ import Video from './Video';
 import bg from '../media/resources/bg.jpeg';
 
 const Image = styled.img.attrs(props => ({ src: props.image, name: "items" }))`
-/* height: ${props => props.fit === "setHeightToFit" ? "100%" : "auto"};
-width: ${props => props.fit === "setWidthToFit" ? "100%" : "auto"}; */
-
 width: var(--width);
 height:var(--height);
 `;
@@ -18,9 +15,7 @@ background-color:inherit;
 border:1px solid black;
 `;
 
-
-//TODO: understand CSS animations and add animations on element change or just touch end
-const Container = styled.div.attrs(({name:"containers"}))`
+const Container = styled.div`
 position: relative;
 background-size: cover;
 background-image: ${props=>props.type==="audio"?`url(${bg})`:"none"};
@@ -31,8 +26,8 @@ min-width:100%;
 width: 100%; 
 height:100%;
 overflow:hidden;
-
 transform:translateX( calc( (var(--movement) * -1%) + (var(--element) * -100%)));
+transition: inherit;
 `;
 
 function Content(props) {

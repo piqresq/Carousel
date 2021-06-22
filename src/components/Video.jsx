@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import Play from '../media/resources/play.svg';
-import { useState } from "react";
+import { useState, useRef} from "react";
 
 const Button = styled.button.attrs(props => ({ onClick: props.click }))`
 z-index: 1;
@@ -27,31 +27,39 @@ background-image:url(${Play});
 background-size:contain;
 cursor:pointer;
 pointer-events: all;
+
 `;
 
-const StyledVideo = styled.video.attrs(props => ({
-    name: "items", loop: true, preload:"auto", onClick: () => {
-        if (props.playing) {
-            props.setPlaying((prev) => (!prev));
-            videoClick();
-        }
-    }
-}))`
+const StyledVideo = styled.video.attrs(props => ({name: "items", loop: true, preload:"auto", ref: props.ref, onClick: props.click}))`
 height: var(--height);
 width: var(--width);
 `;
 
-const videoClick = () => document.getElementById("vid").paused ? document.getElementById("vid").play() : document.getElementById("vid").pause();
+const videoClick = (vid) => vid.paused ? vid.play() : vid.pause();
 
 
 function Video(props) {
     const [isPlaying, setIsPlaying] = useState(false)
+    const vidRef = useRef(null);
+
+    function handleVideoClick() {
+        if (isPlaying) {
+            setIsPlaying((prev) => (!prev));
+            videoClick(vidRef.current);
+        }
+    }
+
+    function handleButtonClick() {
+        setIsPlaying((prev) => (!prev));
+        videoClick(vidRef.current);
+    }
+
     return (
         <>
-            <Button click={() => { setIsPlaying((prev) => (!prev)); videoClick() }}>
+            <Button click={handleButtonClick}>
                 {!isPlaying && <Icon />}
             </Button>
-            <StyledVideo playing={isPlaying} setPlaying={setIsPlaying}>
+            <StyledVideo ref={vidRef} click={handleVideoClick}>
                 <source src={props.video} type="video/mp4"></source>
             </StyledVideo>
         </>
