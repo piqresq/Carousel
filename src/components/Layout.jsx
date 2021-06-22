@@ -13,7 +13,7 @@ function Layout(props) {
         <>
             <Header />
             <Main>
-                <Carousel></Carousel>
+                <Carousel/>
             </Main>
         </>
     );

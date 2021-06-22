@@ -1,14 +1,12 @@
+
+
 import styled from 'styled-components';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect} from "react";
 import Content from './Content';
 import { headerHeight } from "./Header";
 
-const CSSvariables = styled.div.attrs(props=>({id:"vars", ref:props.ref}))`
---movement:0;
---element:0;
-`;
 
-const Container = styled.div.attrs(props => ({ onTouchStart: props.touchStart, onTouchEnd: props.touchEnd, onTouchMove: props.touchMove }))`
+const Container = styled.div.attrs(props => ({ onTouchStart: props.touchStart, onMouseDown: props.mouseDown, onTouchMove: props.touchMove, onMouseMove: props.mouseMove, onTouchEnd: props.touchEnd, onMouseUp: props.mouseUp, name:"container" }))`
 border-radius:20px;
 width:100%;
 height:100%;
@@ -17,6 +15,8 @@ background-size: cover;
 display:flex;
 overflow:hidden;
 align-items:center;
+--movement:0;
+--element:1;
 `;
 
 const getAll =  async () => {
@@ -53,73 +53,115 @@ const getAspectRatio = (content,type) => {
     });
 }
 
-    const getDimensions = (aspect) => (window.visualViewport.width/(window.visualViewport.height-headerHeight)>aspect?["100%","auto"]:["auto","100%"])
+const getDimensions = (aspect) => (window.visualViewport.width/(window.visualViewport.height-headerHeight)>aspect?["100%","auto"]:["auto","100%"])
+
+const getX = (e) => {
+    if (e.changedTouches)
+        return e.changedTouches[0].clientX;
+    else {
+        e.preventDefault();
+        return e.clientX;
+    }
+}
 
 function Carousel() {
     const [data, setData] = useState([]);
-    let prevWidth;
-    useEffect(() => getAll().then(res => setData(res)), []);
-    let varsRef = useRef(null);
-    let scalableContent = data.filter((element) => element[1] != "audio");
-    let items;
+
+    let container = document.getElementsByName("container")[0];
     let selectedItem = 1;
     let initialX = 0;
+    let clicked = false;
+    let items;
 
+    useEffect(() => getAll().then(res => setData(res)), []);
+    
     useEffect(() => {
-        
-        items = document.getElementsByName("content");
-        for (let i = 0; i < items.length; i++) {
-            const [width, height] = getDimensions(scalableContent[i][2]);
-            prevWidth = width;
-            items[i].style.setProperty("--width",width);
-            items[i].style.setProperty("--height",height);
+        if (data.length != 0) {
+            items = document.getElementsByName("items");
+            for (let i = 0; i < items.length; i++) {
+                if (data[i][1] !== "audio") {
+                    let [width, height] = getDimensions(data[i][2]);
+                    items[i].style.setProperty("--width", width);
+                    items[i].style.setProperty("--height", height);
+                }
+                window.addEventListener("resize", resizeHandler);
+            }
+            return () => window.removeEventListener("resize", resizeHandler)
         }
-        window.addEventListener("resize", resizeHandler);
-        return () => window.removeEventListener("resize",resizeHandler)
     },[data])
 
     function resizeHandler() {
         for (let i = 0; i < items.length; i++) {
-            const [width, height] = getDimensions(scalableContent[i][2]);
-            if (width != prevWidth) {
-                items[i].style.setProperty("--width", width);
-                prevWidth = width;
-                items[i].style.setProperty("--height", height);
+            if (data[i] !== "audio") {
+                let [width, height] = getDimensions(data[i][2]);
+                let prevWidth = getComputedStyle(items[i]).getPropertyValue("--width");
+                if (width != prevWidth) {
+                    items[i].style.setProperty("--width", width);
+                    prevWidth = width;
+                    items[i].style.setProperty("--height", height);
+                }
             }
         }
     }
 
-    function touchStartHandler(e) {
-        initialX = e.touches[0].clientX;
+    function pressHandler(e) {
+        clicked = true;
+        initialX = getX(e);
+        
     }
 
-    function touchEndHandler(e) {
-        //TODO: get width of the element and divide it by 2 to decide if the element should be switched to a new one
-        let movement = initialX - e.changedTouches[0].clientX;
-        if (movement > 200) {
+    function moveHandler(e) {
+        if (clicked) {
+            let speed = parseInt(getComputedStyle(container).width) / 100;
+            let movement = initialX - getX(e);
+            container.style.setProperty("--movement", movement / speed);
+            container.style.transition = "none";
+        }
+    }
+
+    function releaseHandler(e) {
+        let breakPoint = parseInt(getComputedStyle(container).width) / 3;
+        let movement = initialX - getX(e);
+        if (movement > breakPoint && selectedItem + 1 != data.length - 1) {
             selectedItem++;
-            varsRef.current.style.setProperty("--element", selectedItem);
+            container.style.setProperty("--element", selectedItem);          
         }
-        else if (movement < -200) {
+        else if (movement < -breakPoint && selectedItem - 1 != 0) {
             selectedItem--;
-            varsRef.current.style.setProperty("--element", selectedItem);
+            container.style.setProperty("--element", selectedItem);
+            
         }
-        varsRef.current.setProperty("--movement", 0);
+        else if (movement < -breakPoint && selectedItem + 1 != data.length - 1) {
+            selectedItem--;
+            container.style.transition = "transform 0.5s ease-out";
+            container.style.setProperty("--element", selectedItem);
+            setTimeout(() => {
+                container.style.transition = "none";
+                selectedItem = data.length - 2;
+                container.style.setProperty("--element", selectedItem)
+            }, 600);
+        }
+        else if (movement > breakPoint && selectedItem - 1 != 0) {
+            selectedItem++;
+            container.style.transition = "transform 0.5s ease-out";
+            container.style.setProperty("--element", selectedItem);
+            setTimeout(() => {
+                container.style.transition = "none";
+                selectedItem = 1;
+                container.style.setProperty("--element", selectedItem);
+            }, 600);
+        }
+        container.style.transition = "transform 0.5s ease-out";
+        clicked = false;
+        container.style.setProperty("--movement", 0);
     }
-
-    function touchMoveHandler(e) {
-
-        let movement = initialX - e.touches[0].clientX;
-            varsRef.current.setProperty("--movement", movement/4);
-    }
-
     let createElements = [];
     for (let i = 0; i < data.length; i++)
         createElements.push(<Content data={data[i]} key={i + 1} id={i + 1} curElement={selectedItem}></Content>);
     
     return (
 
-            <Container touchStart={touchStartHandler} touchMove={touchMoveHandler} touchEnd={touchEndHandler} >
+            <Container touchStart={pressHandler} mouseDown ={pressHandler} touchMove={moveHandler} mouseMove={moveHandler} touchEnd={releaseHandler} mouseUp={releaseHandler}>
                 {createElements}
             </Container>
 
