@@ -10,4 +10,4 @@ To add any custom files, just throw them in that folder. (!The app only support 
 
 
 
-##Have a good day! 🎠🎠🎠
+## Have a good day! 🎠🎠🎠
