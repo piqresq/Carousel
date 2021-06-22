@@ -8,5 +8,6 @@ This Carousel app can run any content (images, video, audio).
 It already has media files in it in the media folder.
 To add any custom files, just throw them in that folder. (!The app only support mp3 and mp4 formats for audio and video, however this can be easily configured in webpack config).
 
-Have a good day!
-🎠🎠🎠
+
+
+##Have a good day! 🎠🎠🎠
