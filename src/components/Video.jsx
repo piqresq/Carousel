@@ -30,15 +30,15 @@ pointer-events: all;
 `;
 
 const StyledVideo = styled.video.attrs(props => ({
-    name: "content", loop: true, preload:"auto", onClick: () => {
+    name: "items", loop: true, preload:"auto", onClick: () => {
         if (props.playing) {
             props.setPlaying((prev) => (!prev));
             videoClick();
         }
     }
 }))`
-height: ${props => props.aspect === "setHeight" ? "100%" : "auto"};
-width: ${props => props.aspect === "setWidth" ? "100%" : "auto"};
+height: var(--height);
+width: var(--width);
 `;
 
 const videoClick = () => document.getElementById("vid").paused ? document.getElementById("vid").play() : document.getElementById("vid").pause();

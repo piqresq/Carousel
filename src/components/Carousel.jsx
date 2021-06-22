@@ -1,12 +1,11 @@
+
+
 import styled from 'styled-components';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, createRef } from "react";
 import Content from './Content';
 import { headerHeight } from "./Header";
 
-const CSSvariables = styled.div.attrs(props=>({id:"vars", ref:props.ref}))`
---movement:0;
---element:0;
-`;
+
 
 const Container = styled.div.attrs(props => ({ onTouchStart: props.touchStart, onTouchEnd: props.touchEnd, onTouchMove: props.touchMove }))`
 border-radius:20px;
@@ -17,6 +16,8 @@ background-size: cover;
 display:flex;
 overflow:hidden;
 align-items:center;
+--movement:0;
+--element:1;
 `;
 
 const getAll =  async () => {
@@ -53,38 +54,46 @@ const getAspectRatio = (content,type) => {
     });
 }
 
-    const getDimensions = (aspect) => (window.visualViewport.width/(window.visualViewport.height-headerHeight)>aspect?["100%","auto"]:["auto","100%"])
+const getDimensions = (aspect) => (window.visualViewport.width/(window.visualViewport.height-headerHeight)>aspect?["100%","auto"]:["auto","100%"])
+
+
 
 function Carousel() {
     const [data, setData] = useState([]);
-    let prevWidth;
-    useEffect(() => getAll().then(res => setData(res)), []);
-    let varsRef = useRef(null);
-    let scalableContent = data.filter((element) => element[1] != "audio");
-    let items;
+
+    let containers = document.getElementsByName("containers");
     let selectedItem = 1;
     let initialX = 0;
+    let prevWidth;
+    let items;
 
+    useEffect(() => getAll().then(res => setData(res)), []);
+    
     useEffect(() => {
-        
-        items = document.getElementsByName("content");
-        for (let i = 0; i < items.length; i++) {
-            const [width, height] = getDimensions(scalableContent[i][2]);
-            prevWidth = width;
-            items[i].style.setProperty("--width",width);
-            items[i].style.setProperty("--height",height);
+        if (data.length != 0) {
+            items = document.getElementsByName("items");
+            for (let i = 0; i < items.length; i++) {
+                if (data[i][1] !== "audio") {
+                    let [width, height] = getDimensions(data[i][2]);
+                    prevWidth = width;
+                    items[i].style.setProperty("--width", width);
+                    items[i].style.setProperty("--height", height);
+                }
+                window.addEventListener("resize", resizeHandler);
+            }
+            return () => window.removeEventListener("resize", resizeHandler)
         }
-        window.addEventListener("resize", resizeHandler);
-        return () => window.removeEventListener("resize",resizeHandler)
     },[data])
 
     function resizeHandler() {
         for (let i = 0; i < items.length; i++) {
-            const [width, height] = getDimensions(scalableContent[i][2]);
-            if (width != prevWidth) {
-                items[i].style.setProperty("--width", width);
-                prevWidth = width;
-                items[i].style.setProperty("--height", height);
+            if (data[i] !== "audio") {
+                let [width, height] = getDimensions(data[i][2]);
+                if (width != prevWidth) {
+                    items[i].style.setProperty("--width", width);
+                    prevWidth = width;
+                    items[i].style.setProperty("--height", height);
+                }
             }
         }
     }
@@ -98,20 +107,24 @@ function Carousel() {
         let movement = initialX - e.changedTouches[0].clientX;
         if (movement > 200) {
             selectedItem++;
-            varsRef.current.style.setProperty("--element", selectedItem);
+            for(let container of containers)
+                container.style.setProperty("--element", selectedItem);
         }
         else if (movement < -200) {
             selectedItem--;
-            varsRef.current.style.setProperty("--element", selectedItem);
+            for (let container of containers)
+                container.style.setProperty("--element", selectedItem);
         }
-        varsRef.current.setProperty("--movement", 0);
+        for (let container of containers)
+            container.style.setProperty("--movement", 0);
     }
 
     function touchMoveHandler(e) {
-
         let movement = initialX - e.touches[0].clientX;
-            varsRef.current.setProperty("--movement", movement/4);
+        for (let container of containers)
+            container.style.setProperty("--movement", movement/4);
     }
+
 
     let createElements = [];
     for (let i = 0; i < data.length; i++)
